@@ -1,0 +1,9 @@
+## Interface: 70000
+## Title: |cffffffffSpecializationEquip
+## Version: 1.0
+## Author: Eliote
+## Notes: Change your equipment set when you change specialization
+## SavedVariablesPerCharacter: SpecializationEquipDB
+
+lib/embeds.xml
+SpecializationEquip.lua

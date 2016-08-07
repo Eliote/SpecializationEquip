@@ -1,0 +1,7 @@
+package-as: SpecializationEquip
+
+ignore:
+    - .gitignore
+
+manual-changelog: CHANGELOG.txt
+
