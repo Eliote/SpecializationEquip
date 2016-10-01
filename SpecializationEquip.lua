@@ -71,6 +71,8 @@ local function HideMinimap(hide)
 end
 
 function AddonFrame.ConfigDialog()
+	if InCombatLockdown() then return end
+
 	-- Create menu frame
 	local dropdown1 = CreateFrame("Frame", ADDON_NAME .. "_MenuFrame", nil, "UIDropDownMenuTemplate")
 
@@ -132,3 +134,22 @@ function AddonFrame.ConfigDialog()
 
 	EasyMenu(menuList, dropdown1, "cursor", 0, 0, "MENU");
 end
+
+---------------------
+--    SLASH CMD    --
+---------------------
+SLASH_SPECIALIZATIONEQUIP1 = '/spec'
+
+function SlashCmdList.SPECIALIZATIONEQUIP(msg, editbox)
+	local command, rest = msg:match("^(%S*)%s*(.-)$");
+
+	if command == "minimap" then
+		HideMinimap(not SpecializationEquipDB.hide)
+	end
+end
+
+
+
+
+
+
