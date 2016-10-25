@@ -1,5 +1,5 @@
-## Interface: 70000
-## Title: |cffffffffSpecializationEquip
+## Interface: 70100
+## Title: SpecializationEquip
 ## Version: @project-version@
 ## Author: Eliote
 ## Notes: Change your equipment set when you change specialization
