@@ -27,6 +27,14 @@ local Launcher = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
 	end
 })
 
+local function iconFromTexture(texture)
+	if (texture) then
+		return "|T" .. texture .. ":0|t"
+	end
+
+	return "[null]"
+end
+
 local function syncBars()
 	ClearCursor()
 
@@ -35,8 +43,9 @@ local function syncBars()
 			for i = ((bar - 1) * 12 + 1), (bar * 12) do
 				local type, id, subType, spellID = GetActionInfo(i)
 
-				if (barCache[i] and barCache[i].id) then
-					if (barCache[i].id ~= id) then
+				if (barCache[i].type ~= type or barCache[i].id ~= id) then
+					local fromIcon = GetActionTexture(i)
+					if (barCache[i] and barCache[i].id) then
 						local type = barCache[i].type
 						if (type == "companion ") then
 							PickupCompanion(barCache[i].id)
@@ -56,9 +65,13 @@ local function syncBars()
 						end
 
 						PlaceAction(i)
+					else
+						PickupAction(i)
 					end
-				else
-					PickupAction(i)
+
+					if (SpecializationEquipDB.logSync) then
+						print("Syncing action " .. i .. " from " .. iconFromTexture(fromIcon) .. " to " .. iconFromTexture(GetActionTexture(i)))
+					end
 				end
 
 				ClearCursor()
@@ -114,6 +127,7 @@ function AddonFrame.ADDON_LOADED(name)
 
 	SpecializationEquipDB = SpecializationEquipDB or {}
 	SpecializationEquipDB.barsToSync = SpecializationEquipDB.barsToSync or {}
+	SpecializationEquipDB.logSync = SpecializationEquipDB.logSync or false
 
 	hooksecurefunc("SetSpecialization", function(index)
 		AddonFrame:UnregisterEvent('ACTIONBAR_SLOT_CHANGED')
@@ -207,11 +221,18 @@ function AddonFrame.ConfigDialog()
 	for index = 1, 10 do
 		table.insert(barsList, {
 			text = "Action Bar " .. index,
-			func = function(self, _, _, checked) SpecializationEquipDB.barsToSync[index] = not checked end,
+			func = function(self, _, _, checked) SpecializationEquipDB.barsToSync[index] = checked end,
 			checked = function() return SpecializationEquipDB.barsToSync[index] end,
 			keepShownOnClick = true
 		})
 	end
+	table.insert(barsList, { text = "", notCheckable = true, notClickable = true })
+	table.insert(barsList, {
+		text = "Log syncronization in chat",
+		func = function(self, _, _, checked) SpecializationEquipDB.logSync = checked end,
+		checked = function() return SpecializationEquipDB.logSync end,
+		keepShownOnClick = true
+	})
 	table.insert(menuList, { text = "ActionBar Syncronization (beta)", hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = barsList })
 
 	-- separator
