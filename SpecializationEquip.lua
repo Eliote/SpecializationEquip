@@ -5,11 +5,14 @@ AddonFrame:SetScript('OnEvent', function(self, event, ...) self[event](...) end)
 AddonFrame:RegisterEvent('ADDON_LOADED')
 AddonFrame:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
 AddonFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
+AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
+AddonFrame:RegisterEvent('UNIT_SPELLCAST_STOP')
 
 local CurrentSpecialization
---local SpecializationEquipDB
 
 local LDBIcon = LibStub("LibDBIcon-1.0")
+
+local barCache = {}
 
 local Launcher = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
 	type = "launcher",
@@ -24,8 +27,75 @@ local Launcher = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
 	end
 })
 
+local function syncBars()
+	ClearCursor()
+
+	for bar, enabled in pairs(SpecializationEquipDB.barsToSync) do
+		if (enabled) then
+			for i = ((bar - 1) * 12 + 1), (bar * 12) do
+				local type, id, subType, spellID = GetActionInfo(i)
+
+				if (barCache[i] and barCache[i].id) then
+					if (barCache[i].id ~= id) then
+						local type = barCache[i].type
+						if (type == "companion ") then
+							PickupCompanion(barCache[i].id)
+						elseif (type == "equipmentset") then
+							PickupItem(barCache[i].id)
+						elseif (type == "flyout") then
+							-- ???
+							PickupSpell(barCache[i].id)
+						elseif (type == "item") then
+							PickupItem(barCache[i].id)
+						elseif (type == "macro") then
+							PickupMacro(barCache[i].id)
+						elseif (type == "summonpet") then
+							C_PetJournal.PickupPet(barCache[i].id)
+						elseif (type == "spell") then
+							PickupSpell(barCache[i].id)
+						end
+
+						PlaceAction(i)
+					end
+				else
+					PickupAction(i)
+				end
+
+				ClearCursor()
+
+				type, id, subType, spellID = GetActionInfo(i)
+				barCache[i] = { ["id"] = id, ["type"] = type }
+			end
+		end
+	end
+
+	AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
+end
+
+function AddonFrame.UNIT_SPELLCAST_STOP(unit, spell, rank, lineID, spellID)
+	if unit ~= "player" then return end
+
+	if spellID == 200749 then
+		AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
+	end
+end
+
+function AddonFrame.ACTIONBAR_SLOT_CHANGED(slot, b)
+	if slot > 120 then return end
+
+	local _, specName = GetSpecializationInfo(GetSpecialization())
+	-- the spec is changing
+	if CurrentSpecialization ~= specName then return end
+
+	local type, id, subType, spellID = GetActionInfo(slot)
+	--print(slot, b, type, id, subType, spellID)
+	barCache[slot] = { ["id"] = id, ["type"] = type }
+end
+
 function AddonFrame.PLAYER_SPECIALIZATION_CHANGED(unit)
 	if unit ~= "player" then return end
+
+	AddonFrame:UnregisterEvent('ACTIONBAR_SLOT_CHANGED')
 
 	local _, specName = GetSpecializationInfo(GetSpecialization())
 
@@ -35,12 +105,19 @@ function AddonFrame.PLAYER_SPECIALIZATION_CHANGED(unit)
 	local setName = SpecializationEquipDB[specName]
 
 	if setName then UseEquipmentSet(setName) end
+
+	syncBars()
 end
 
 function AddonFrame.ADDON_LOADED(name)
 	if name ~= ADDON_NAME then return end
 
 	SpecializationEquipDB = SpecializationEquipDB or {}
+	SpecializationEquipDB.barsToSync = SpecializationEquipDB.barsToSync or {}
+
+	hooksecurefunc("SetSpecialization", function(index)
+		AddonFrame:UnregisterEvent('ACTIONBAR_SLOT_CHANGED')
+	end)
 
 	LDBIcon:Register(ADDON_NAME, Launcher, SpecializationEquipDB)
 end
@@ -49,6 +126,11 @@ function AddonFrame.PLAYER_ENTERING_WORLD()
 	if not CurrentSpecialization then
 		local _, specName = GetSpecializationInfo(GetSpecialization())
 		CurrentSpecialization = specName
+	end
+
+	for i = 1, (10 * 12) do
+		local type, id, subType, spellID = GetActionInfo(i)
+		barCache[i] = { ["id"] = id, ["type"] = type }
 	end
 end
 
@@ -120,6 +202,21 @@ function AddonFrame.ConfigDialog()
 	end
 	table.insert(menuList, { text = "Quick change", hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = equipList })
 
+	-- Sync menus
+	local barsList = {}
+	for index = 1, 10 do
+		table.insert(barsList, {
+			text = "Action Bar " .. index,
+			func = function(self, _, _, checked) SpecializationEquipDB.barsToSync[index] = not checked end,
+			checked = function() return SpecializationEquipDB.barsToSync[index] end,
+			keepShownOnClick = true
+		})
+	end
+	table.insert(menuList, { text = "ActionBar Syncronization (beta)", hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = barsList })
+
+	-- separator
+	table.insert(menuList, { text = "", notCheckable = true, notClickable = true })
+
 	-- Hide minimap button
 	table.insert(menuList, {
 		text = "Hide minimap button",
@@ -129,6 +226,7 @@ function AddonFrame.ConfigDialog()
 
 	-- separator
 	table.insert(menuList, { text = "", notCheckable = true, notClickable = true })
+
 	-- close
 	table.insert(menuList, { text = "Close", notCheckable = true, function() ToggleDropDownMenu() end })
 
@@ -136,7 +234,7 @@ function AddonFrame.ConfigDialog()
 end
 
 ---------------------
---    SLASH CMD    --
+-- SLASH CMD    --
 ---------------------
 SLASH_SPECIALIZATIONEQUIP1 = '/spec'
 
