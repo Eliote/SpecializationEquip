@@ -2,11 +2,5 @@ package-as: SpecializationEquip
 
 ignore:
     - .gitignore
-    - Libs
 
-externals:
-    Libs/CallbackHandler-1.0: https://repos.wowace.com/wow/callbackhandler/trunk
-    Libs/LibDataBroker-1.1: https://repos.wowace.com/wow/libdatabroker-1-1
-    Libs/LibDBIcon-1.0: https://repos.wowace.com/wow/libdbicon-1-0/trunk
-    Libs/LibStub: https://repos.wowace.com/wow/libstub/trunk
 
