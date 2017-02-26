@@ -6,13 +6,13 @@ AddonFrame:RegisterEvent('ADDON_LOADED')
 AddonFrame:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
 AddonFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
 AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
-AddonFrame:RegisterEvent('UNIT_SPELLCAST_STOP')
 
 local CurrentSpecialization
 
 local LDBIcon = LibStub("LibDBIcon-1.0")
 
 local barCache = {}
+local actionBarEventState
 
 local Launcher = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
 	type = "launcher",
@@ -26,6 +26,23 @@ local Launcher = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
 		AddonFrame.ConfigDialog()
 	end
 })
+
+local function dprint(...)
+	print(...)
+end
+
+local function changeActionBarEvent(state)
+	if (state == actionBarEventState) then return end
+
+	if (state) then
+		AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
+	else
+		AddonFrame:UnregisterEvent('ACTIONBAR_SLOT_CHANGED')
+	end
+
+	dprint("ACTIONBAR_SLOT_CHANGED: ", state)
+	actionBarEventState = state
+end
 
 local function iconFromTexture(texture)
 	if (texture) then
@@ -83,15 +100,14 @@ local function syncBars()
 		end
 	end
 
-	AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
+	changeActionBarEvent(true)
 end
 
-function AddonFrame.UNIT_SPELLCAST_STOP(unit, spell, rank, lineID, spellID)
+function AddonFrame.UNIT_SPELLCAST_INTERRUPTED(unit, spell, rank, lineID, spellID)
 	if unit ~= "player" then return end
 
-	if spellID == 200749 then
-		AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
-	end
+	AddonFrame:UnregisterEvent('UNIT_SPELLCAST_INTERRUPTED')
+	changeActionBarEvent(true)
 end
 
 function AddonFrame.ACTIONBAR_SLOT_CHANGED(slot)
@@ -103,9 +119,10 @@ function AddonFrame.ACTIONBAR_SLOT_CHANGED(slot)
 
 	local type, id, subType, spellID = GetActionInfo(slot)
 
-	if (barCache[slot].type == type and barCache[slot].id == id) then return end
+	if (barCache[slot] == nil and type == nil) then return end
+	if (barCache[slot] ~= nil and (barCache[slot].type == type and barCache[slot].id == id)) then return end
 
-	--print(slot, type, id, subType, spellID)
+	dprint("ACTIONBAR_SLOT_CHANGED: ", slot, type, id, subType, spellID)
 
 	barCache[slot] = { ["id"] = id, ["type"] = type }
 end
@@ -113,12 +130,13 @@ end
 function AddonFrame.PLAYER_SPECIALIZATION_CHANGED(unit)
 	if unit ~= "player" then return end
 
-	AddonFrame:UnregisterEvent('ACTIONBAR_SLOT_CHANGED')
-
 	local _, specName = GetSpecializationInfo(GetSpecialization())
 
 	if CurrentSpecialization == specName then return end
 	CurrentSpecialization = specName
+
+	AddonFrame:UnregisterEvent('UNIT_SPELLCAST_INTERRUPTED')
+	changeActionBarEvent(false)
 
 	local setName = SpecializationEquipDB[specName]
 
@@ -133,9 +151,11 @@ function AddonFrame.ADDON_LOADED(name)
 	SpecializationEquipDB = SpecializationEquipDB or {}
 	SpecializationEquipDB.barsToSync = SpecializationEquipDB.barsToSync or {}
 	SpecializationEquipDB.logSync = SpecializationEquipDB.logSync or false
+	SpecializationEquipDB.debug = SpecializationEquipDB.debug or false
 
 	hooksecurefunc("SetSpecialization", function(index)
-		AddonFrame:UnregisterEvent('ACTIONBAR_SLOT_CHANGED')
+		changeActionBarEvent(false)
+		AddonFrame:RegisterEvent('UNIT_SPELLCAST_INTERRUPTED')
 	end)
 
 	LDBIcon:Register(ADDON_NAME, Launcher, SpecializationEquipDB)
@@ -248,6 +268,15 @@ function AddonFrame.ConfigDialog()
 		text = "Hide minimap button",
 		func = function(_, _, _, checked) HideMinimap(not checked) end,
 		checked = function() return SpecializationEquipDB.hide end
+	})
+	table.insert(menuList, {
+		text = "Enable debug",
+		-- when keepShownOnClick is true the UI is updated and then the function is called giving the new 'checked'
+		-- state, but when it's false the function is called without changing the UI thus the checked returns
+		-- the state it was seted when creating the menu(the return of 'checked' function)
+		func = function(_, _, _, checked) SpecializationEquipDB.debug = checked end,
+		checked = function() return SpecializationEquipDB.debug end,
+		keepShownOnClick = true
 	})
 
 	-- separator
