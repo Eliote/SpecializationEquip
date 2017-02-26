@@ -38,11 +38,12 @@ end
 local function syncBars()
 	ClearCursor()
 
-	for bar, enabled in pairs(SpecializationEquipDB.barsToSync) do
-		if (enabled) then
-			for i = ((bar - 1) * 12 + 1), (bar * 12) do
-				local type, id, subType, spellID = GetActionInfo(i)
+	--for bar, enabled in pairs(SpecializationEquipDB.barsToSync) do
+	for bar = 1, 12 do
+		for i = ((bar - 1) * 12 + 1), (bar * 12) do
+			local type, id, subType, spellID = GetActionInfo(i)
 
+			if (SpecializationEquipDB.barsToSync[bar]) then
 				if (barCache[i].type ~= type or barCache[i].id ~= id) then
 					local fromIcon = GetActionTexture(i)
 					if (barCache[i] and barCache[i].id) then
@@ -75,10 +76,10 @@ local function syncBars()
 				end
 
 				ClearCursor()
-
-				type, id, subType, spellID = GetActionInfo(i)
-				barCache[i] = { ["id"] = id, ["type"] = type }
 			end
+
+			type, id, subType, spellID = GetActionInfo(i)
+			barCache[i] = { ["id"] = id, ["type"] = type }
 		end
 	end
 
@@ -93,7 +94,7 @@ function AddonFrame.UNIT_SPELLCAST_STOP(unit, spell, rank, lineID, spellID)
 	end
 end
 
-function AddonFrame.ACTIONBAR_SLOT_CHANGED(slot, b)
+function AddonFrame.ACTIONBAR_SLOT_CHANGED(slot)
 	if slot > 120 then return end
 
 	local _, specName = GetSpecializationInfo(GetSpecialization())
@@ -101,7 +102,11 @@ function AddonFrame.ACTIONBAR_SLOT_CHANGED(slot, b)
 	if CurrentSpecialization ~= specName then return end
 
 	local type, id, subType, spellID = GetActionInfo(slot)
-	--print(slot, b, type, id, subType, spellID)
+
+	if (barCache[slot].type == type and barCache[slot].id == id) then return end
+
+	--print(slot, type, id, subType, spellID)
+
 	barCache[slot] = { ["id"] = id, ["type"] = type }
 end
 
