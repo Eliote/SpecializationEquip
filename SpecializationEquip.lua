@@ -28,7 +28,9 @@ local Launcher = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
 })
 
 local function dprint(...)
-	print(...)
+	if (SpecializationEquipDB.debug) then
+		print(...)
+	end
 end
 
 local function changeActionBarEvent(state)
