@@ -4,6 +4,7 @@
 ## Author: Eliote
 ## Notes: Change your equipment set when you change specialization
 ## SavedVariablesPerCharacter: SpecializationEquipDB
+## SavedVariables: SpecializationEquipGlobalDB
 
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
