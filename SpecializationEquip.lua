@@ -98,7 +98,9 @@ function getBarInfo(id, type, subType)
 			name, _, icon = C_MountJournal.GetMountInfoByID(id)
 		end
 	elseif (type == "equipmentset") then
-		name, icon = GetEquipmentSetInfo(id)
+		if(C_EquipmentSet.GetEquipmentSetIDs()[id]) then
+			name, icon = GetEquipmentSetInfo(id)
+		end
 	elseif (type == "flyout") then
 		-- ???
 		name, _, icon = GetSpellInfo(id)
