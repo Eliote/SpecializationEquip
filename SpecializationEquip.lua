@@ -69,7 +69,7 @@ local function pickupAction(id, type, subType)
 	elseif (type == "summonmount") then
 		PickupMountById(id)
 	elseif (type == "equipmentset") then
-		PickupItem(id)
+		PickupEquipmentSetByName(id)
 	elseif (type == "flyout") then
 		-- ???
 		PickupSpell(id)
