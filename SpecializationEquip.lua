@@ -216,7 +216,7 @@ function AddonFrame.PLAYER_SPECIALIZATION_CHANGED(unit)
 
 	if setName then UseEquipmentSet(setName) end
 
-	syncBars()
+	C_Timer.After(0, syncBars) -- delay the update to the next frame
 end
 
 function AddonFrame.ADDON_LOADED(name)
