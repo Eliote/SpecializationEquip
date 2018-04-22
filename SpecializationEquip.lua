@@ -13,6 +13,10 @@ local LDBIcon = LibStub("LibDBIcon-1.0")
 
 local barCache = {}
 local actionBarEventState
+local removedItem = {
+	id = nil,
+	slot = nil
+}
 
 local Launcher = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
 	type = "launcher",
@@ -177,6 +181,12 @@ end
 function AddonFrame.UNIT_SPELLCAST_INTERRUPTED(unit, spell, rank, lineID, spellID)
 	if unit ~= "player" then return end
 
+	if(GetInventoryItemID("player", i) ~= nil) then
+		C_Timer.After(0, function()
+			EquipItemByName(removedItem.id, removedItem.slot)
+		end)
+	end
+
 	AddonFrame:UnregisterEvent('UNIT_SPELLCAST_INTERRUPTED')
 	changeActionBarEvent(true)
 end
@@ -215,6 +225,10 @@ function AddonFrame.PLAYER_SPECIALIZATION_CHANGED(unit)
 	local setName = SpecializationEquipDB[specName]
 
 	if setName then UseEquipmentSet(setName) end
+
+	-- reset removed item
+	removedItem.id = nil
+	removedItem.slot = nil
 
 	C_Timer.After(0, syncBars) -- delay the update to the next frame
 end
@@ -274,6 +288,57 @@ local function HideMinimap(hide)
 	end
 end
 
+local TALENT_ITEMS_IDS = {
+	[150936] = true, -- Soul of the Shadowblade
+	[151636] = true, -- Soul of the Archdruid
+	[151639] = true, -- Soul of the Slayer
+	[151640] = true, -- Soul of the Deathlord
+	[151641] = true, -- Soul of the Huntmaster
+	[151642] = true, -- Soul of the Archmage
+	[151643] = true, -- Soul of the Grandmaster
+	[151644] = true, -- Soul of the Highlord
+	[151646] = true, -- Soul of the High Priest
+	[151647] = true, -- Soul of the Farseer
+	[151649] = true, -- Soul of the Netherlord
+	[151650] = true, -- Soul of the Battlelord
+}
+local function setSpec(index)
+	local found
+
+	-- search for Talent itens
+	for i = 1, 18 do
+		local id = GetInventoryItemID("player", i)
+
+		if(TALENT_ITEMS_IDS[id]) then
+			found = i
+			PickupInventoryItem(i)
+
+			for bagId = 0, 4 do -- why you do that blizz??
+				if(GetContainerNumFreeSlots(bagId) > 0) then
+					if(bagId == 0) then
+						PutItemInBackpack() -- OMG
+					else
+						PutItemInBag(19 + bagId) -- x.x
+					end
+					PickupInventoryItem(i) -- pickup the equip slot again to make sure it was put in the bag
+				end
+				if(GetCursorInfo() == nil) then break end
+			end
+
+			removedItem.id = id
+			removedItem.slot = i
+
+			break -- there is only one per class, so we can stop look for more here.
+		end
+	end
+
+	if(found and PickupInventoryItem(found) and GetCursorInfo()) then return end
+
+	C_Timer.After(0, function()
+		SetSpecialization(index)
+	end)
+end
+
 function AddonFrame.ConfigDialog()
 	if InCombatLockdown() then return end
 
@@ -302,7 +367,7 @@ function AddonFrame.ConfigDialog()
 			text = "|T" .. specIcon .. ":0|t " .. specName,
 			hasArrow = true,
 			checked = function() return GetSpecialization() == index end,
-			func = function() SetSpecialization(index) end,
+			func = function() setSpec(index) end,
 			menuList = equipList
 		})
 	end
