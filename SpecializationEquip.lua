@@ -89,7 +89,7 @@ local function pickupAction(id, type, subType)
 end
 
 function getBarInfo(id, type, subType)
-	local name
+	local name = id
 	local icon
 
 	--dprint("BarInfo(id=" .. (id or "nil") .. ", type=" .. (type or "nil") .. ", subType=" .. (subType or "nil") .. ")")
@@ -120,7 +120,10 @@ function getBarInfo(id, type, subType)
 		name, _, icon = GetSpellInfo(id)
 	end
 
-	return name, icon
+    -- Actions information are lazily loaded, so it returns nil before that
+    -- TODO: find a way to update de id after it is loaded
+
+	return name or id, icon
 end
 
 local function syncBars()
