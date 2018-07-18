@@ -92,6 +92,8 @@ function getBarInfo(id, type, subType)
 	local name
 	local icon
 
+	--dprint("BarInfo(id=" .. (id or "nil") .. ", type=" .. (type or "nil") .. ", subType=" .. (subType or "nil") .. ")")
+
 	if (type == "companion") then
 		--_, name, _, icon = GetCompanionInfo(subType or "MOUNT", id)
 		name, _, icon = GetSpellInfo(id)
@@ -103,7 +105,7 @@ function getBarInfo(id, type, subType)
 		end
 	elseif (type == "equipmentset") then
 		if(C_EquipmentSet.GetEquipmentSetIDs()[id]) then
-			name, icon = GetEquipmentSetInfo(id)
+			name, icon = C_EquipmentSet.GetEquipmentSetInfo(id)
 		end
 	elseif (type == "flyout") then
 		-- ???
@@ -224,7 +226,7 @@ function AddonFrame.PLAYER_SPECIALIZATION_CHANGED(unit)
 
 	local setName = SpecializationEquipDB[specName]
 
-	if setName then UseEquipmentSet(setName) end
+	if setName then C_EquipmentSet.UseEquipmentSet(C_EquipmentSet.GetEquipmentSetID(setName)) end
 
 	-- reset removed item
 	removedItem.id = nil
@@ -352,8 +354,8 @@ function AddonFrame.ConfigDialog()
 
 		-- Create list of sets for the specialization
 		local equipList = {}
-		for index = 1, GetNumEquipmentSets() do
-			local setName, setIcon = GetEquipmentSetInfo(index)
+		for _,equipId in pairs(C_EquipmentSet.GetEquipmentSetIDs()) do
+			local setName, setIcon = C_EquipmentSet.GetEquipmentSetInfo(equipId)
 
 			table.insert(equipList, {
 				text = setName,
@@ -377,14 +379,14 @@ function AddonFrame.ConfigDialog()
 
 	-- Create quick change list
 	local equipList = {}
-	for index = 1, GetNumEquipmentSets() do
-		local setName, setIcon, setId, isEquipped = GetEquipmentSetInfo(index)
+	for _,equipId in pairs(C_EquipmentSet.GetEquipmentSetIDs()) do
+		local setName, setIcon, setId, isEquipped = C_EquipmentSet.GetEquipmentSetInfo(equipId)
 
 		table.insert(equipList, {
 			text = setName,
 			icon = setIcon,
-			func = function() UseEquipmentSet(setName) end,
-			checked = function() return select(4, GetEquipmentSetInfo(index)) end
+			func = function() C_EquipmentSet.UseEquipmentSet(setId) end,
+			checked = function() return select(4, C_EquipmentSet.GetEquipmentSetInfo(setId)) end
 		})
 	end
 	table.insert(menuList, { text = "Quick change", hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = equipList })
