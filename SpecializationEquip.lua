@@ -42,11 +42,14 @@ local function changeActionBarEvent(state)
 
 	if (state) then
 		AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
+		AddonFrame:RegisterEvent('UPDATE_MACROS')
 	else
 		AddonFrame:UnregisterEvent('ACTIONBAR_SLOT_CHANGED')
+		AddonFrame:UnregisterEvent('UPDATE_MACROS')
 	end
 
 	dprint("ACTIONBAR_SLOT_CHANGED: ", state)
+	dprint("UPDATE_MACROS: ", state)
 	actionBarEventState = state
 end
 
@@ -126,6 +129,18 @@ function getBarInfo(id, type, subType)
 	return name or id, icon
 end
 
+local function recreateCache()
+	for slot = 1, (10 * 12) do
+		local type, id, subType, spellID = GetActionInfo(slot)
+		if not (barCache[slot] == nil and type == nil) then
+			if not (barCache[slot] ~= nil and (barCache[slot].type == type and barCache[slot].id == id)) then
+				dprint("UPDATE SYNC SLOT: ", slot, type, id, subType, spellID)
+				barCache[slot] = { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID }
+			end
+		end
+	end
+end
+
 local function syncBars()
 	ClearCursor()
 
@@ -202,7 +217,6 @@ function AddonFrame.ACTIONBAR_SLOT_CHANGED(slot)
 	local _, specName = GetSpecializationInfo(GetSpecialization())
 	-- the spec is changing
 	if CurrentSpecialization ~= specName then return end
-
 	local type, id, subType, spellID = GetActionInfo(slot)
 
 	if (barCache[slot] == nil and type == nil) then return end
@@ -269,10 +283,13 @@ function AddonFrame.PLAYER_ENTERING_WORLD()
 		CurrentSpecialization = specName
 	end
 
-	for i = 1, (10 * 12) do
-		local type, id, subType, spellID = GetActionInfo(i)
-		barCache[i] = { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID }
-	end
+	recreateCache()
+
+	AddonFrame:RegisterEvent('UPDATE_MACROS')
+end
+
+function AddonFrame.UPDATE_MACROS()
+	C_Timer.After(0, recreateCache)
 end
 
 local function setSpecSet(specName, setName, select)
