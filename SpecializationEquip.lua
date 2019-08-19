@@ -439,8 +439,8 @@ function AddonFrame.ConfigDialog()
 			for index = 1, 10 do
 				local actions = {}
 				for i = ((index - 1) * 12 + 1), (index * 12) do
-					local b = SpecializationEquipGlobalDB.bars[name][i]
-					local iname, icon = getBarInfo(b.id, b.type, b.subType)
+					local b = SpecializationEquipGlobalDB.bars[name] and SpecializationEquipGlobalDB.bars[name][i]
+					local iname, icon = (b and getBarInfo(b.id, b.type, b.subType)) or "--"
 
 					table.insert(actions, {
 						text = iname or "--",
