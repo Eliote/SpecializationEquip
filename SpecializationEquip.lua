@@ -201,7 +201,7 @@ end
 function AddonFrame.UNIT_SPELLCAST_INTERRUPTED(unit, spell, rank, lineID, spellID)
 	if unit ~= "player" then return end
 
-	if(GetInventoryItemID("player", i) ~= nil) then
+	if(removedItem.slot ~= nil and GetInventoryItemID("player", removedItem.slot) == nil) then
 		C_Timer.After(0, function()
 			EquipItemByName(removedItem.id, removedItem.slot)
 		end)
