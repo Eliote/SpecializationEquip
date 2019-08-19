@@ -107,7 +107,7 @@ function getBarInfo(id, type, subType)
 			name, _, icon = C_MountJournal.GetMountInfoByID(id)
 		end
 	elseif (type == "equipmentset") then
-		if(C_EquipmentSet.GetEquipmentSetIDs()[id]) then
+		if (C_EquipmentSet.GetEquipmentSetIDs()[id]) then
 			name, icon = C_EquipmentSet.GetEquipmentSetInfo(id)
 		end
 	elseif (type == "flyout") then
@@ -123,8 +123,8 @@ function getBarInfo(id, type, subType)
 		name, _, icon = GetSpellInfo(id)
 	end
 
-    -- Actions information are lazily loaded, so it returns nil before that
-    -- TODO: find a way to update de id after it is loaded
+	-- Actions information are lazily loaded, so it returns nil before that
+	-- TODO: find a way to update de id after it is loaded
 
 	return name or id, icon
 end
@@ -201,7 +201,7 @@ end
 function AddonFrame.UNIT_SPELLCAST_INTERRUPTED(unit, spell, rank, lineID, spellID)
 	if unit ~= "player" then return end
 
-	if(removedItem.slot ~= nil and GetInventoryItemID("player", removedItem.slot) == nil) then
+	if (removedItem.slot ~= nil and GetInventoryItemID("player", removedItem.slot) == nil) then
 		C_Timer.After(0, function()
 			EquipItemByName(removedItem.id, removedItem.slot)
 		end)
@@ -331,20 +331,21 @@ local function setSpec(index)
 	for i = 1, 18 do
 		local id = GetInventoryItemID("player", i)
 
-		if(TALENT_ITEMS_IDS[id]) then
+		if (TALENT_ITEMS_IDS[id]) then
 			found = i
 			PickupInventoryItem(i)
 
-			for bagId = 0, 4 do -- why you do that blizz??
-				if(GetContainerNumFreeSlots(bagId) > 0) then
-					if(bagId == 0) then
+			for bagId = 0, 4 do
+				if (GetContainerNumFreeSlots(bagId) > 0) then
+					-- why you do that blizz??
+					if (bagId == 0) then
 						PutItemInBackpack() -- OMG
 					else
 						PutItemInBag(19 + bagId) -- x.x
 					end
 					PickupInventoryItem(i) -- pickup the equip slot again to make sure it was put in the bag
 				end
-				if(GetCursorInfo() == nil) then break end
+				if (GetCursorInfo() == nil) then break end
 			end
 
 			removedItem.id = id
@@ -354,7 +355,7 @@ local function setSpec(index)
 		end
 	end
 
-	if(found and PickupInventoryItem(found) and GetCursorInfo()) then return end
+	if (found and PickupInventoryItem(found) and GetCursorInfo()) then return end
 
 	C_Timer.After(0, function()
 		SetSpecialization(index)
@@ -374,7 +375,7 @@ function AddonFrame.ConfigDialog()
 
 		-- Create list of sets for the specialization
 		local equipList = {}
-		for _,equipId in pairs(C_EquipmentSet.GetEquipmentSetIDs()) do
+		for _, equipId in pairs(C_EquipmentSet.GetEquipmentSetIDs()) do
 			local setName, setIcon = C_EquipmentSet.GetEquipmentSetInfo(equipId)
 
 			table.insert(equipList, {
@@ -399,7 +400,7 @@ function AddonFrame.ConfigDialog()
 
 	-- Create quick change list
 	local equipList = {}
-	for _,equipId in pairs(C_EquipmentSet.GetEquipmentSetIDs()) do
+	for _, equipId in pairs(C_EquipmentSet.GetEquipmentSetIDs()) do
 		local setName, setIcon, setId, isEquipped = C_EquipmentSet.GetEquipmentSetInfo(equipId)
 
 		table.insert(equipList, {
