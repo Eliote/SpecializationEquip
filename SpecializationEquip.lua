@@ -76,7 +76,10 @@ local function pickupAction(id, type, subType)
 	elseif (type == "summonmount") then
 		PickupMountById(id)
 	elseif (type == "equipmentset") then
-		PickupEquipmentSetByName(id)
+		local setId = C_EquipmentSet.GetEquipmentSetID(id)
+		if setId then
+			C_EquipmentSet.PickupEquipmentSet(setId)
+		end
 	elseif (type == "flyout") then
 		-- ???
 		PickupSpell(id)
