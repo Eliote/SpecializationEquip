@@ -1,4 +1,4 @@
-local ADDON_NAME, _ = ...
+local ADDON_NAME, SpecializationEquip = ...
 
 local AddonFrame = CreateFrame('Frame', ADDON_NAME)
 AddonFrame:SetScript('OnEvent', function(self, event, ...) self[event](...) end)
@@ -26,8 +26,8 @@ local Launcher = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
 		tooltip:AddLine("Click to configure", 1, 1, 1)
 		tooltip:Show()
 	end,
-	OnClick = function(_, button)
-		AddonFrame.ConfigDialog()
+	OnClick = function()
+		SpecializationEquip.ConfigDialog()
 	end
 })
 
@@ -94,7 +94,7 @@ local function pickupAction(id, type, subType)
 	end
 end
 
-function getBarInfo(id, type, subType)
+function SpecializationEquip.getBarInfo(id, type, subType)
 	local name = id
 	local icon
 
@@ -128,9 +128,7 @@ function getBarInfo(id, type, subType)
 
 	-- Actions information are lazily loaded, so it returns nil before that
 	-- TODO: find a way to update de id after it is loaded
-
-	print(name, icon)
-	return name or id, icon
+	return (name or id), icon
 end
 
 local function recreateCache()
@@ -179,7 +177,7 @@ local function syncBars()
 	changeActionBarEvent(true)
 end
 
-local function copyBar(name, fromBar, toBar)
+function SpecializationEquip.copyBar(name, fromBar, toBar)
 	local actionBar = SpecializationEquipGlobalDB.bars[name]
 
 	for i = 1, 12 do
@@ -251,9 +249,9 @@ function AddonFrame.PLAYER_SPECIALIZATION_CHANGED(unit)
 	AddonFrame:UnregisterEvent('UNIT_SPELLCAST_INTERRUPTED')
 	changeActionBarEvent(false)
 
-	local setName = SpecializationEquipDB[specName]
+	--local setName = SpecializationEquipDB[specName]
 
-	if setName then C_EquipmentSet.UseEquipmentSet(C_EquipmentSet.GetEquipmentSetID(setName)) end
+	--if setName then C_EquipmentSet.UseEquipmentSet(C_EquipmentSet.GetEquipmentSetID(setName)) end
 
 	-- reset removed item
 	removedItem.id = nil
@@ -302,15 +300,7 @@ function AddonFrame.UPDATE_MACROS()
 	C_Timer.After(0, recreateCache)
 end
 
-local function setSpecSet(specName, setName, select)
-	if select then
-		SpecializationEquipDB[specName] = setName
-	else
-		SpecializationEquipDB[specName] = nil;
-	end
-end
-
-local function HideMinimap(hide)
+function SpecializationEquip.HideMinimap(hide)
 	SpecializationEquipDB.hide = hide
 
 	if hide then
@@ -334,7 +324,7 @@ local TALENT_ITEMS_IDS = {
 	[151649] = true, -- Soul of the Netherlord
 	[151650] = true, -- Soul of the Battlelord
 }
-local function setSpec(index)
+function SpecializationEquip.setSpec(index)
 	local found
 
 	-- search for Talent itens
@@ -372,157 +362,6 @@ local function setSpec(index)
 	end)
 end
 
-function AddonFrame.ConfigDialog()
-	if InCombatLockdown() then return end
-
-	-- Create menu frame
-	local dropdown1 = CreateFrame("Frame", ADDON_NAME .. "_MenuFrame", nil, "UIDropDownMenuTemplate")
-
-	-- Create specialization list
-	local menuList = {}
-	for index = 1, GetNumSpecializations() do
-		local _, specName, _, specIcon = GetSpecializationInfo(index)
-
-		-- Create list of sets for the specialization
-		local equipList = {}
-		for _, equipId in pairs(C_EquipmentSet.GetEquipmentSetIDs()) do
-			local setName, setIcon = C_EquipmentSet.GetEquipmentSetInfo(equipId)
-
-			table.insert(equipList, {
-				text = setName,
-				icon = setIcon,
-				func = function(self, _, _, checked) setSpecSet(specName, setName, not checked) end,
-				checked = function() return (SpecializationEquipDB[specName] == setName) end
-			})
-		end
-
-		table.insert(menuList, {
-			text = "|T" .. specIcon .. ":0|t " .. specName,
-			hasArrow = true,
-			checked = function() return GetSpecialization() == index end,
-			func = function() setSpec(index) end,
-			menuList = equipList
-		})
-	end
-
-	-- separator
-	table.insert(menuList, { text = "", notCheckable = true, notClickable = true })
-
-	-- Create quick change list
-	local equipList = {}
-	for _, equipId in pairs(C_EquipmentSet.GetEquipmentSetIDs()) do
-		local setName, setIcon, setId, isEquipped = C_EquipmentSet.GetEquipmentSetInfo(equipId)
-
-		table.insert(equipList, {
-			text = setName,
-			icon = setIcon,
-			func = function() C_EquipmentSet.UseEquipmentSet(setId) end,
-			checked = function() return select(4, C_EquipmentSet.GetEquipmentSetInfo(setId)) end
-		})
-	end
-	table.insert(menuList, { text = "Quick change", hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = equipList })
-
-	-- Sync menus
-	local barsList = {}
-	for index = 1, 10 do
-		table.insert(barsList, {
-			text = "Action Bar " .. index,
-			func = function(self, _, _, checked) SpecializationEquipDB.barsToSync[index] = checked end,
-			checked = function() return SpecializationEquipDB.barsToSync[index] end,
-			keepShownOnClick = true
-		})
-	end
-	table.insert(barsList, { text = "", notCheckable = true, notClickable = true })
-	table.insert(barsList, {
-		text = "Log syncronization in chat",
-		func = function(self, _, _, checked) SpecializationEquipDB.logSync = checked end,
-		checked = function() return SpecializationEquipDB.logSync end,
-		keepShownOnClick = true
-	})
-	table.insert(menuList, { text = "ActionBar Syncronization (beta)", hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = barsList })
-
-	-- create copy bars
-	local barsCopyList = {}
-	for indexTo = 1, 10 do
-		local barsTo = {}
-
-		for name in pairs(SpecializationEquipGlobalDB.bars) do
-			local barsFrom = {}
-
-			for indexFrom = 1, 10 do
-				if indexTo ~= indexFrom then
-					local actions = {}
-					for i = ((indexFrom - 1) * 12 + 1), (indexFrom * 12) do
-						local b = SpecializationEquipGlobalDB.bars[name] and SpecializationEquipGlobalDB.bars[name][i]
-						if (name == UnitName("player")) then
-							local actionType, id, subType = GetActionInfo(i)
-							b = { id = id, type = actionType, subType = subType }
-						end
-
-						local iname, icon = (b and getBarInfo(b.id, b.type, b.subType)) or "--"
-
-						table.insert(actions, {
-							text = iname or "--",
-							icon = icon,
-							notClickable = true,
-							notCheckable = true
-						})
-					end
-
-					table.insert(barsFrom, {
-						text = "Copy from bar " .. indexFrom .. " to bar " .. indexTo,
-						func = function(self, _, _, checked) copyBar(name, indexFrom, indexTo) end,
-						notCheckable = true,
-						keepShownOnClick = true,
-						hasArrow = true,
-						menuList = actions
-					})
-				end
-			end
-
-			table.insert(barsTo, { text = name, hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = barsFrom })
-		end
-
-		table.insert(barsCopyList, { text = "To bar " .. indexTo, hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = barsTo })
-	end
-
-	table.insert(barsCopyList, { text = "", notCheckable = true, notClickable = true })
-	table.insert(barsCopyList, {
-		text = "Log copy in chat",
-		func = function(self, _, _, checked) SpecializationEquipDB.logCopy = checked end,
-		checked = function() return SpecializationEquipDB.logCopy end,
-		keepShownOnClick = true
-	})
-	table.insert(menuList, { text = "ActionBar Copy", hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = barsCopyList })
-
-	-- separator
-	table.insert(menuList, { text = "", notCheckable = true, notClickable = true })
-
-	-- Hide minimap button
-	table.insert(menuList, {
-		text = "Hide minimap button",
-		func = function(_, _, _, checked) HideMinimap(not checked) end,
-		checked = function() return SpecializationEquipDB.hide end
-	})
-	table.insert(menuList, {
-		text = "Enable debug",
-		-- when keepShownOnClick is true the UI is updated and then the function is called giving the new 'checked'
-		-- state, but when it's false the function is called without changing the UI thus the checked returns
-		-- the state it was seted when creating the menu(the return of 'checked' function)
-		func = function(_, _, _, checked) SpecializationEquipDB.debug = checked end,
-		checked = function() return SpecializationEquipDB.debug end,
-		keepShownOnClick = true
-	})
-
-	-- separator
-	table.insert(menuList, { text = "", notCheckable = true, notClickable = true })
-
-	-- close
-	table.insert(menuList, { text = "Close", notCheckable = true, function() ToggleDropDownMenu() end })
-
-	EasyMenu(menuList, dropdown1, "cursor", 0, 0, "MENU");
-end
-
 ---------------------
 -- SLASH CMD    --
 ---------------------
@@ -532,7 +371,7 @@ function SlashCmdList.SPECIALIZATIONEQUIP(msg, editbox)
 	local command, rest = msg:match("^(%S*)%s*(.-)$");
 
 	if command == "minimap" then
-		HideMinimap(not SpecializationEquipDB.hide)
+		SpecializationEquip.HideMinimap(not SpecializationEquipDB.hide)
 	end
 end
 
