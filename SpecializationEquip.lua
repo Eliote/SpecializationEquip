@@ -129,6 +129,7 @@ function getBarInfo(id, type, subType)
 	-- Actions information are lazily loaded, so it returns nil before that
 	-- TODO: find a way to update de id after it is loaded
 
+	print(name, icon)
 	return name or id, icon
 end
 
@@ -178,23 +179,29 @@ local function syncBars()
 	changeActionBarEvent(true)
 end
 
-local function copyBar(name, bar)
+local function copyBar(name, fromBar, toBar)
 	local actionBar = SpecializationEquipGlobalDB.bars[name]
 
-	for i = ((bar - 1) * 12 + 1), (bar * 12) do
-		--local type, id, subType, spellID = GetActionInfo(i)
+	for i = 1, 12 do
+		local from = ((fromBar - 1) * 12) + i
+		local to = ((toBar - 1) * 12) + i
 
-		local fromIcon = GetActionTexture(i)
+		local fromIcon = GetActionTexture(from)
 
-		if (actionBar[i] and actionBar[i].id) then
-			pickupAction(actionBar[i].id, actionBar[i].type, actionBar[i].subType)
-			PlaceAction(i)
+		local barInfo = actionBar[from]
+		if (name == UnitName("player")) then
+			local actionType, id, subType = GetActionInfo(from)
+			barInfo = { id = id, type = actionType, subType = subType }
+		end
+		if (barInfo and barInfo.id) then
+			pickupAction(barInfo.id, barInfo.type, barInfo.subType)
+			PlaceAction(to)
 		else
-			PickupAction(i)
+			PickupAction(to)
 		end
 
 		if (SpecializationEquipDB.logCopy) then
-			print("Changing action " .. i .. " " .. iconFromTexture(fromIcon) .. " from you to " .. iconFromTexture(GetActionTexture(i)) .. " from " .. name)
+			print("Changing action " .. from .. " " .. iconFromTexture(fromIcon) .. " into " .. iconFromTexture(GetActionTexture(to)) .. " from " .. name)
 		end
 
 		ClearCursor()
@@ -436,37 +443,49 @@ function AddonFrame.ConfigDialog()
 
 	-- create copy bars
 	local barsCopyList = {}
-	for name in pairs(SpecializationEquipGlobalDB.bars) do
-		if (name ~= UnitName("player")) then
-			local barsIndex = {}
+	for indexTo = 1, 10 do
+		local barsTo = {}
 
-			for index = 1, 10 do
-				local actions = {}
-				for i = ((index - 1) * 12 + 1), (index * 12) do
-					local b = SpecializationEquipGlobalDB.bars[name] and SpecializationEquipGlobalDB.bars[name][i]
-					local iname, icon = (b and getBarInfo(b.id, b.type, b.subType)) or "--"
+		for name in pairs(SpecializationEquipGlobalDB.bars) do
+			local barsFrom = {}
 
-					table.insert(actions, {
-						text = iname or "--",
-						icon = icon,
-						notClickable = true,
-						notCheckable = true
+			for indexFrom = 1, 10 do
+				if indexTo ~= indexFrom then
+					local actions = {}
+					for i = ((indexFrom - 1) * 12 + 1), (indexFrom * 12) do
+						local b = SpecializationEquipGlobalDB.bars[name] and SpecializationEquipGlobalDB.bars[name][i]
+						if (name == UnitName("player")) then
+							local actionType, id, subType = GetActionInfo(i)
+							b = { id = id, type = actionType, subType = subType }
+						end
+
+						local iname, icon = (b and getBarInfo(b.id, b.type, b.subType)) or "--"
+
+						table.insert(actions, {
+							text = iname or "--",
+							icon = icon,
+							notClickable = true,
+							notCheckable = true
+						})
+					end
+
+					table.insert(barsFrom, {
+						text = "Copy from bar " .. indexFrom .. " to bar " .. indexTo,
+						func = function(self, _, _, checked) copyBar(name, indexFrom, indexTo) end,
+						notCheckable = true,
+						keepShownOnClick = true,
+						hasArrow = true,
+						menuList = actions
 					})
 				end
-
-				table.insert(barsIndex, {
-					text = "Copy bar " .. index,
-					func = function(self, _, _, checked) copyBar(name, index) end,
-					notCheckable = true,
-					keepShownOnClick = true,
-					hasArrow = true,
-					menuList = actions
-				})
 			end
 
-			table.insert(barsCopyList, { text = name, hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = barsIndex })
+			table.insert(barsTo, { text = name, hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = barsFrom })
 		end
+
+		table.insert(barsCopyList, { text = "To bar " .. indexTo, hasArrow = true, notCheckable = true, keepShownOnClick = true, menuList = barsTo })
 	end
+
 	table.insert(barsCopyList, { text = "", notCheckable = true, notClickable = true })
 	table.insert(barsCopyList, {
 		text = "Log copy in chat",
