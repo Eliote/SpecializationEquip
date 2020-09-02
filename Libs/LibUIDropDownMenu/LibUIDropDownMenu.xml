@@ -1,7 +1,0 @@
-<!-- $Id: LibUIDropDownMenu.xml 40 2018-12-23 16:14:03Z arith $ -->
-<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
-..\FrameXML\UI.xsd">
-	<Script file="LibUIDropDownMenu.lua"/>
-	<Include file="LibUIDropDownMenuTemplates.xml"/>
-	<Script file="LibEasyMenu.lua"/>
-</Ui>

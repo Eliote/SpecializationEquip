@@ -1,5 +1,13 @@
 local ADDON_NAME, SpecializationEquip = ...
 
+--- @type ElioteDropDownMenu
+local EDDM = LibStub("ElioteDropDownMenu-1.0")
+local DropDownMenu_AddButton = EDDM.UIDropDownMenu_AddButton
+local DropDownMenu_CreateInfo = EDDM.UIDropDownMenu_CreateInfo
+local DropDownMenu_GetOrCreate = EDDM.UIDropDownMenu_GetOrCreate
+local DropDownMenu_Initialize = EDDM.UIDropDownMenu_Initialize
+local ToggleDropDownMenu = EDDM.ToggleDropDownMenu
+
 local MenuSeparator = {
 	text = "", -- required!
 	hasArrow = false,
@@ -28,7 +36,7 @@ local MenuSeparator = {
 }
 
 local function AddSpacer(level)
-	L_UIDropDownMenu_AddButton(MenuSeparator, level)
+	DropDownMenu_AddButton(MenuSeparator, level)
 end
 
 local menuTable = {
@@ -37,7 +45,7 @@ local menuTable = {
 			for index = 1, GetNumSpecializations() do
 				local _, specName, _, specIcon = GetSpecializationInfo(index)
 
-				local info = L_UIDropDownMenu_CreateInfo()
+				local info = DropDownMenu_CreateInfo()
 				info.text = "|T" .. specIcon .. ":0|t " .. specName
 				info.hasArrow = true
 				info.checked = function() return GetSpecialization() == index end
@@ -45,7 +53,7 @@ local menuTable = {
 				info.arg1 = specName
 				info.menuList = { name = "SPEC", specName = specName, specIndex = index }
 
-				L_UIDropDownMenu_AddButton(info)
+				DropDownMenu_AddButton(info)
 			end
 			AddSpacer()
 		end,
@@ -56,7 +64,7 @@ local menuTable = {
 				local specIndex = menuList.specIndex
 				local equippedId = C_EquipmentSet.GetEquipmentSetID(setName)
 
-				local info = L_UIDropDownMenu_CreateInfo()
+				local info = DropDownMenu_CreateInfo()
 				info.text = setName
 				info.icon = setIcon
 				info.func = function(_, _, _, checked)
@@ -71,73 +79,73 @@ local menuTable = {
 					return equippedId == specSetId
 				end
 
-				L_UIDropDownMenu_AddButton(info, 2)
+				DropDownMenu_AddButton(info, 2)
 			end
 		end
 	},
 	["QUICKCHANGE"] = {
 		[1] = function()
-			local info = L_UIDropDownMenu_CreateInfo()
+			local info = DropDownMenu_CreateInfo()
 			info.text = "Quick change"
 			info.hasArrow = true
 			info.notCheckable = true
 			info.keepShownOnClick = true
 			info.menuList = "QUICKCHANGE"
 
-			L_UIDropDownMenu_AddButton(info)
+			DropDownMenu_AddButton(info)
 			AddSpacer()
 		end,
 		[2] = function()
 			for _, equipId in pairs(C_EquipmentSet.GetEquipmentSetIDs()) do
 				local setName, setIcon, setId, isEquipped = C_EquipmentSet.GetEquipmentSetInfo(equipId)
 
-				local info = L_UIDropDownMenu_CreateInfo()
+				local info = DropDownMenu_CreateInfo()
 				info.text = setName
 				info.icon = setIcon
 				info.func = function() C_EquipmentSet.UseEquipmentSet(setId) end
 				info.checked = function() return select(4, C_EquipmentSet.GetEquipmentSetInfo(setId)) end
 
-				L_UIDropDownMenu_AddButton(info, 2)
+				DropDownMenu_AddButton(info, 2)
 			end
 		end
 	},
 	["BARSYNC"] = {
 		[1] = function()
-			local info = L_UIDropDownMenu_CreateInfo()
+			local info = DropDownMenu_CreateInfo()
 			info.text = "ActionBar Synchronization"
 			info.hasArrow = true
 			info.notCheckable = true
 			info.keepShownOnClick = true
 			info.menuList = "BARSYNC"
 
-			L_UIDropDownMenu_AddButton(info)
+			DropDownMenu_AddButton(info)
 			AddSpacer()
 		end,
 		[2] = function()
 			for index = 1, 10 do
-				local info = L_UIDropDownMenu_CreateInfo()
+				local info = DropDownMenu_CreateInfo()
 				info.text = "Action Bar " .. index
 				info.func = function(_, _, _, checked) SpecializationEquipDB.barsToSync[index] = checked end
 				info.checked = function() return SpecializationEquipDB.barsToSync[index] end
 				info.keepShownOnClick = true
 
-				L_UIDropDownMenu_AddButton(info, 2)
+				DropDownMenu_AddButton(info, 2)
 			end
 
 			AddSpacer(2)
 
-			local info = L_UIDropDownMenu_CreateInfo()
+			local info = DropDownMenu_CreateInfo()
 			info.text = "Log syncronization in chat"
 			info.func = function(_, _, _, checked) SpecializationEquipDB.logSync = checked end
 			info.checked = function() return SpecializationEquipDB.logSync end
 			info.keepShownOnClick = true
 
-			L_UIDropDownMenu_AddButton(info, 2)
+			DropDownMenu_AddButton(info, 2)
 		end
 	},
 	["COPYBAR"] = {
 		[1] = function()
-			local info = L_UIDropDownMenu_CreateInfo()
+			local info = DropDownMenu_CreateInfo()
 
 			info.text = "ActionBar Copy"
 			info.hasArrow = true
@@ -147,12 +155,12 @@ local menuTable = {
 				name = "COPYBAR"
 			}
 
-			L_UIDropDownMenu_AddButton(info)
+			DropDownMenu_AddButton(info)
 			AddSpacer()
 		end,
 		[2] = function()
 			for index = 1, 10 do
-				local info = L_UIDropDownMenu_CreateInfo()
+				local info = DropDownMenu_CreateInfo()
 				info.text = "To your bar " .. index
 				info.hasArrow = true
 				info.notCheckable = true
@@ -162,22 +170,22 @@ local menuTable = {
 					toIndex = index
 				}
 
-				L_UIDropDownMenu_AddButton(info, 2)
+				DropDownMenu_AddButton(info, 2)
 			end
 
 			AddSpacer(2)
 
-			local info = L_UIDropDownMenu_CreateInfo()
+			local info = DropDownMenu_CreateInfo()
 			info.text = "Log copy in chat"
 			info.func = function(_, _, _, checked) SpecializationEquipDB.logCopy = checked end
 			info.checked = function() return SpecializationEquipDB.logCopy end
 			info.keepShownOnClick = true
 
-			L_UIDropDownMenu_AddButton(info, 2)
+			DropDownMenu_AddButton(info, 2)
 		end,
 		[3] = function(menuList)
 			for name in pairs(SpecializationEquipGlobalDB.bars) do
-				local info = L_UIDropDownMenu_CreateInfo()
+				local info = DropDownMenu_CreateInfo()
 				info.text = name
 				info.hasArrow = true
 				info.notCheckable = true
@@ -188,12 +196,12 @@ local menuTable = {
 					fromChar = name
 				}
 
-				L_UIDropDownMenu_AddButton(info, 3)
+				DropDownMenu_AddButton(info, 3)
 			end
 		end,
 		[4] = function(menuList)
 			for fromIndex = 1, 10 do
-				local info = L_UIDropDownMenu_CreateInfo()
+				local info = DropDownMenu_CreateInfo()
 				info.text = "Copy bar " .. fromIndex .. " from " .. menuList.fromChar .. " to your bar " .. menuList.toIndex
 				info.func = function() SpecializationEquip.copyBar(menuList.fromChar, fromIndex, menuList.toIndex) end
 				info.hasArrow = true
@@ -206,7 +214,7 @@ local menuTable = {
 					fromChar = menuList.fromChar
 				}
 
-				L_UIDropDownMenu_AddButton(info, 4)
+				DropDownMenu_AddButton(info, 4)
 			end
 		end,
 		[5] = function(menuList)
@@ -222,46 +230,46 @@ local menuTable = {
 					iname, icon = SpecializationEquip.getBarInfo(b.id, b.type, b.subType)
 				end
 
-				local info = L_UIDropDownMenu_CreateInfo()
+				local info = DropDownMenu_CreateInfo()
 				info.text = iname or "--"
 				info.icon = icon
 				info.notClickable = true
 				info.notCheckable = true
 
-				L_UIDropDownMenu_AddButton(info, 5)
+				DropDownMenu_AddButton(info, 5)
 			end
 		end
 	},
 	["MINIMAP"] = {
 		[1] = function()
-			local info = L_UIDropDownMenu_CreateInfo()
+			local info = DropDownMenu_CreateInfo()
 			info.text = "Hide minimap button"
 			info.func = function(_, _, _, checked) SpecializationEquip.HideMinimap(not checked) end
 			info.checked = function() return SpecializationEquipDB.hide end
 
-			L_UIDropDownMenu_AddButton(info)
+			DropDownMenu_AddButton(info)
 		end
 	},
 	["DEBUG"] = {
 		[1] = function()
-			local info = L_UIDropDownMenu_CreateInfo()
+			local info = DropDownMenu_CreateInfo()
 			info.text = "Enable debug"
 			info.func = function(_, _, _, checked) SpecializationEquipDB.debug = checked end
 			info.checked = function() return SpecializationEquipDB.debug end
 			info.keepShownOnClick = true
 
-			L_UIDropDownMenu_AddButton(info)
+			DropDownMenu_AddButton(info)
 			AddSpacer()
 		end
 	},
 	["CLOSE"] = {
 		[1] = function()
-			local info = L_UIDropDownMenu_CreateInfo()
+			local info = DropDownMenu_CreateInfo()
 			info.text = "Close"
 			info.notCheckable = true
 			info.func = function() end
 
-			L_UIDropDownMenu_AddButton(info)
+			DropDownMenu_AddButton(info)
 		end
 	}
 }
@@ -289,10 +297,10 @@ local function initializeMenu(self, level, menuList)
 	AddMenu("CLOSE", level, menuList)
 end
 
+local dropdown1 = DropDownMenu_GetOrCreate(ADDON_NAME .. "_MenuFrame")
 function SpecializationEquip.ConfigDialog()
 	if InCombatLockdown() then return end
 
-	local dropdown1 = L_Create_UIDropDownMenu(ADDON_NAME .. "_MenuFrame", nil)
-	L_UIDropDownMenu_Initialize(dropdown1, initializeMenu, "MENU")
-	L_ToggleDropDownMenu(1, nil, dropdown1, "cursor", 3, -3)
+	DropDownMenu_Initialize(dropdown1, initializeMenu, "MENU")
+	ToggleDropDownMenu(1, nil, dropdown1, "cursor", 3, -3)
 end
