@@ -128,6 +128,11 @@ local menuTable = {
 				info.func = function(_, _, _, checked) SpecializationEquipDB.barsToSync[index] = checked end
 				info.checked = function() return SpecializationEquipDB.barsToSync[index] end
 				info.keepShownOnClick = true
+				info.hasArrow = true
+				info.menuList = {
+					name = "BARSYNC",
+					barIndex = index
+				}
 
 				DropDownMenu_AddButton(info, 2)
 			end
@@ -141,6 +146,25 @@ local menuTable = {
 			info.keepShownOnClick = true
 
 			DropDownMenu_AddButton(info, 2)
+		end,
+		[3] = function(menuList)
+			for i = ((menuList.barIndex - 1) * 12 + 1), (menuList.barIndex * 12) do
+				local actionType, id, subType = GetActionInfo(i)
+				local b = { id = id, type = actionType, subType = subType }
+
+				local iname, icon
+				if b then
+					iname, icon = SpecializationEquip.getBarInfo(b.id, b.type, b.subType)
+				end
+
+				local info = DropDownMenu_CreateInfo()
+				info.text = iname or "--"
+				info.icon = icon
+				info.notClickable = true
+				info.notCheckable = true
+
+				DropDownMenu_AddButton(info, 3)
+			end
 		end
 	},
 	["COPYBAR"] = {
