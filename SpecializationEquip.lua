@@ -7,6 +7,8 @@ AddonFrame:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
 AddonFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
 AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
 
+SpecializationEquip.MAX_BARS = 15
+
 local CurrentSpecialization
 
 local LDBIcon = LibStub("LibDBIcon-1.0")
@@ -132,7 +134,7 @@ function SpecializationEquip.getBarInfo(id, type, subType)
 end
 
 local function recreateCache()
-	for slot = 1, (10 * 12) do
+	for slot = 1, (SpecializationEquip.MAX_BARS * 12) do
 		local type, id, subType, spellID = GetActionInfo(slot)
 		if not (barCache[slot] == nil and type == nil) then
 			if not (barCache[slot] ~= nil and (barCache[slot].type == type and barCache[slot].id == id)) then
@@ -147,30 +149,30 @@ local function syncBars()
 	ClearCursor()
 
 	--for bar, enabled in pairs(SpecializationEquipDB.barsToSync) do
-	for bar = 1, 12 do
-		for i = ((bar - 1) * 12 + 1), (bar * 12) do
-			local type, id, subType, spellID = GetActionInfo(i)
+	for bar = 1, SpecializationEquip.MAX_BARS do
+		for slot = ((bar - 1) * 12 + 1), (bar * 12) do
+			local type, id, subType, spellID = GetActionInfo(slot)
 
 			if (SpecializationEquipDB.barsToSync[bar]) then
-				if (barCache[i].type ~= type or barCache[i].id ~= id) then
-					local fromIcon = GetActionTexture(i)
-					if (barCache[i] and barCache[i].id) then
-						pickupAction(barCache[i].id, barCache[i].type, barCache[i].subType)
-						PlaceAction(i)
+				if (barCache[slot].type ~= type or barCache[slot].id ~= id) then
+					local fromIcon = GetActionTexture(slot)
+					if (barCache[slot] and barCache[slot].id) then
+						pickupAction(barCache[slot].id, barCache[slot].type, barCache[slot].subType)
+						PlaceAction(slot)
 					else
-						PickupAction(i)
+						PickupAction(slot)
 					end
 
 					if (SpecializationEquipDB.logSync) then
-						print("Syncing action " .. i .. " from " .. iconFromTexture(fromIcon) .. " to " .. iconFromTexture(GetActionTexture(i)))
+						print("Syncing action " .. slot .. " from " .. iconFromTexture(fromIcon) .. " to " .. iconFromTexture(GetActionTexture(slot)))
 					end
 				end
 
 				ClearCursor()
 			end
 
-			type, id, subType, spellID = GetActionInfo(i)
-			barCache[i] = { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID }
+			type, id, subType, spellID = GetActionInfo(slot)
+			barCache[slot] = { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID }
 		end
 	end
 
@@ -220,7 +222,7 @@ function AddonFrame.UNIT_SPELLCAST_INTERRUPTED(unit, spell, rank, lineID, spellI
 end
 
 function AddonFrame.ACTIONBAR_SLOT_CHANGED(slot)
-	if slot > 120 then return end
+	if slot > (SpecializationEquip.MAX_BARS * 12) then return end
 
 	local _, specName = GetSpecializationInfo(GetSpecialization())
 	-- the spec is changing

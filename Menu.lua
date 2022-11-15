@@ -122,7 +122,7 @@ local menuTable = {
 			AddSpacer()
 		end,
 		[2] = function()
-			for index = 1, 10 do
+			for index = 1, SpecializationEquip.MAX_BARS do
 				local info = DropDownMenu_CreateInfo()
 				info.text = "Action Bar " .. index
 				info.func = function(_, _, _, checked) SpecializationEquipDB.barsToSync[index] = checked end
@@ -183,7 +183,7 @@ local menuTable = {
 			AddSpacer()
 		end,
 		[2] = function()
-			for index = 1, 10 do
+			for index = 1, SpecializationEquip.MAX_BARS do
 				local info = DropDownMenu_CreateInfo()
 				info.text = "To your bar " .. index
 				info.hasArrow = true
@@ -224,7 +224,7 @@ local menuTable = {
 			end
 		end,
 		[4] = function(menuList)
-			for fromIndex = 1, 10 do
+			for fromIndex = 1, SpecializationEquip.MAX_BARS do
 				local info = DropDownMenu_CreateInfo()
 				info.text = "Copy bar " .. fromIndex .. " from " .. menuList.fromChar .. " to your bar " .. menuList.toIndex
 				info.func = function() SpecializationEquip.copyBar(menuList.fromChar, fromIndex, menuList.toIndex) end
