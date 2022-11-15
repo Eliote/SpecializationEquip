@@ -154,7 +154,7 @@ local function syncBars()
 			local type, id, subType, spellID = GetActionInfo(slot)
 
 			if (SpecializationEquipDB.barsToSync[bar]) then
-				if (barCache[slot].type ~= type or barCache[slot].id ~= id) then
+				if (barCache[slot] == nil or barCache[slot].type ~= type or barCache[slot].id ~= id) then
 					local fromIcon = GetActionTexture(slot)
 					if (barCache[slot] and barCache[slot].id) then
 						pickupAction(barCache[slot].id, barCache[slot].type, barCache[slot].subType)
