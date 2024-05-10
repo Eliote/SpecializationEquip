@@ -1,10 +1,11 @@
-## Interface: 100200
+## Interface: 100207
 ## Title: SpecializationEquip
 ## Version: @project-version@
 ## Author: Eliote
 ## Notes: Change your equipment set when you change specialization
 ## SavedVariablesPerCharacter: SpecializationEquipDB
 ## SavedVariables: SpecializationEquipGlobalDB
+## IconTexture: Interface\Icons\Inv_helmet_03
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
