@@ -10,6 +10,7 @@ AddonFrame:RegisterEvent('ACTIONBAR_SLOT_CHANGED')
 SpecializationEquip.MAX_BARS = 15
 
 local CurrentSpecialization
+local CurrentPlayerName
 
 local LDBIcon = LibStub("LibDBIcon-1.0")
 
@@ -37,6 +38,22 @@ local function dprint(...)
 	if (SpecializationEquipDB.debug) then
 		print(...)
 	end
+end
+
+local function GetDbBarSlot(slot)
+	return barCache[slot]
+end
+
+local function SaveDbBarSlot(slot, value)
+	barCache[slot] = value
+	local specBars = SpecializationEquipGlobalDB.specBars[CurrentPlayerName]
+	local specTable = specBars[CurrentSpecialization]
+	if (specTable == nil or specTable.bar == nil) then
+		local _, _, _, specIcon = GetSpecializationInfo(GetSpecialization())
+		specTable = { icon = specIcon, bar = {} }
+		specBars[CurrentSpecialization] = specTable
+	end
+	specTable.bar[slot] = value
 end
 
 local function changeActionBarEvent(state)
@@ -136,12 +153,11 @@ end
 local function recreateCache()
 	for slot = 1, (SpecializationEquip.MAX_BARS * 12) do
 		local type, id, subType, spellID = GetActionInfo(slot)
-		if not (barCache[slot] == nil and type == nil) then
-			if not (barCache[slot] ~= nil and (barCache[slot].type == type and barCache[slot].id == id)) then
-				dprint("UPDATE SYNC SLOT: ", slot, type, id, subType, spellID)
-				barCache[slot] = { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID }
-			end
+		local bar = GetDbBarSlot(slot)
+		if (bar ~= nil or type ~= nil) and (bar == nil or bar.type ~= type or bar.id ~= id) then
+			dprint("UPDATE SYNC SLOT: ", slot, type, id, subType, spellID)
 		end
+		SaveDbBarSlot(slot, { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID })
 	end
 end
 
@@ -154,10 +170,11 @@ local function syncBars()
 			local type, id, subType, spellID = GetActionInfo(slot)
 
 			if (SpecializationEquipDB.barsToSync[bar]) then
-				if (barCache[slot] == nil or barCache[slot].type ~= type or barCache[slot].id ~= id) then
+				local barSlot = GetDbBarSlot(slot)
+				if (barSlot == nil or barSlot.type ~= type or barSlot.id ~= id) then
 					local fromIcon = GetActionTexture(slot)
-					if (barCache[slot] and barCache[slot].id) then
-						pickupAction(barCache[slot].id, barCache[slot].type, barCache[slot].subType)
+					if (barSlot and barSlot.id) then
+						pickupAction(barSlot.id, barSlot.type, barSlot.subType)
 						PlaceAction(slot)
 					else
 						PickupAction(slot)
@@ -172,15 +189,20 @@ local function syncBars()
 			end
 
 			type, id, subType, spellID = GetActionInfo(slot)
-			barCache[slot] = { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID }
+			SaveDbBarSlot(slot, { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID })
 		end
 	end
 
 	changeActionBarEvent(true)
 end
 
-function SpecializationEquip.copyBar(name, fromBar, toBar)
-	local actionBar = SpecializationEquipGlobalDB.bars[name]
+function SpecializationEquip.copyBar(name, spec, fromBar, toBar)
+	local actionBar
+	if (spec ~= nil) then
+		actionBar = SpecializationEquipGlobalDB.specBars[name][spec].bar
+	else
+		actionBar = SpecializationEquipGlobalDB.bars[name]
+	end
 
 	for i = 1, 12 do
 		local from = ((fromBar - 1) * 12) + i
@@ -229,15 +251,16 @@ function AddonFrame.ACTIONBAR_SLOT_CHANGED(slot)
 	if CurrentSpecialization ~= specName then return end
 	local type, id, subType, spellID = GetActionInfo(slot)
 
-	if (barCache[slot] == nil and type == nil) then return end
-	if (barCache[slot] ~= nil and (barCache[slot].type == type and barCache[slot].id == id)) then return end
+	local bar = GetDbBarSlot(slot)
+	if (bar == nil and type == nil) then return end
+	if (bar ~= nil and (bar.type == type and bar.id == id)) then return end
 
 	dprint("ACTIONBAR_SLOT_CHANGED: ", slot, type, id, subType, spellID)
 
 	-- random mount special case
 	--if(id == 268435455 and type == "summonmount") then id = 0 end
 
-	barCache[slot] = { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID }
+	SaveDbBarSlot(slot, { ["id"] = id, ["type"] = type, ["subType"] = subType, ["spellId"] = spellID })
 end
 
 function AddonFrame.PLAYER_SPECIALIZATION_CHANGED(unit)
@@ -275,7 +298,11 @@ function AddonFrame.ADDON_LOADED(name)
 	SpecializationEquipGlobalDB.bars = SpecializationEquipGlobalDB.bars or {}
 
 	local playerName = UnitName("player");
+	CurrentPlayerName = playerName
 	SpecializationEquipGlobalDB.bars[playerName] = SpecializationEquipGlobalDB.bars[playerName] or {}
+
+	SpecializationEquipGlobalDB.specBars = SpecializationEquipGlobalDB.specBars or {}
+	SpecializationEquipGlobalDB.specBars[playerName] = SpecializationEquipGlobalDB.specBars[playerName] or {}
 
 	barCache = SpecializationEquipGlobalDB.bars[playerName]
 
@@ -354,6 +381,7 @@ function SpecializationEquip.setSpec(index)
 			removedItem.slot = i
 
 			break -- there is only one per class, so we can stop look for more here.
+
 		end
 	end
 

@@ -48,8 +48,12 @@ local menuTable = {
 				local info = DropDownMenu_CreateInfo()
 				info.text = "|T" .. specIcon .. ":0|t " .. specName
 				info.hasArrow = true
-				info.checked = function() return GetSpecialization() == index end
-				info.func = function() SpecializationEquip.setSpec(index) end
+				info.checked = function()
+					return GetSpecialization() == index
+				end
+				info.func = function()
+					SpecializationEquip.setSpec(index)
+				end
 				info.arg1 = specName
 				info.menuList = { name = "SPEC", specName = specName, specIndex = index }
 
@@ -102,8 +106,12 @@ local menuTable = {
 				local info = DropDownMenu_CreateInfo()
 				info.text = setName
 				info.icon = setIcon
-				info.func = function() C_EquipmentSet.UseEquipmentSet(setId) end
-				info.checked = function() return select(4, C_EquipmentSet.GetEquipmentSetInfo(setId)) end
+				info.func = function()
+					C_EquipmentSet.UseEquipmentSet(setId)
+				end
+				info.checked = function()
+					return select(4, C_EquipmentSet.GetEquipmentSetInfo(setId))
+				end
 
 				DropDownMenu_AddButton(info, 2)
 			end
@@ -125,8 +133,12 @@ local menuTable = {
 			for index = 1, SpecializationEquip.MAX_BARS do
 				local info = DropDownMenu_CreateInfo()
 				info.text = "Action Bar " .. index
-				info.func = function(_, _, _, checked) SpecializationEquipDB.barsToSync[index] = checked end
-				info.checked = function() return SpecializationEquipDB.barsToSync[index] end
+				info.func = function(_, _, _, checked)
+					SpecializationEquipDB.barsToSync[index] = checked
+				end
+				info.checked = function()
+					return SpecializationEquipDB.barsToSync[index]
+				end
 				info.keepShownOnClick = true
 				info.hasArrow = true
 				info.menuList = {
@@ -141,8 +153,12 @@ local menuTable = {
 
 			local info = DropDownMenu_CreateInfo()
 			info.text = "Log syncronization in chat"
-			info.func = function(_, _, _, checked) SpecializationEquipDB.logSync = checked end
-			info.checked = function() return SpecializationEquipDB.logSync end
+			info.func = function(_, _, _, checked)
+				SpecializationEquipDB.logSync = checked
+			end
+			info.checked = function()
+				return SpecializationEquipDB.logSync
+			end
 			info.keepShownOnClick = true
 
 			DropDownMenu_AddButton(info, 2)
@@ -201,8 +217,12 @@ local menuTable = {
 
 			local info = DropDownMenu_CreateInfo()
 			info.text = "Log copy in chat"
-			info.func = function(_, _, _, checked) SpecializationEquipDB.logCopy = checked end
-			info.checked = function() return SpecializationEquipDB.logCopy end
+			info.func = function(_, _, _, checked)
+				SpecializationEquipDB.logCopy = checked
+			end
+			info.checked = function()
+				return SpecializationEquipDB.logCopy
+			end
 			info.keepShownOnClick = true
 
 			DropDownMenu_AddButton(info, 2)
@@ -224,30 +244,64 @@ local menuTable = {
 			end
 		end,
 		[4] = function(menuList)
+			local db = SpecializationEquipGlobalDB.specBars[menuList.fromChar]
+			local add = function(spec, icon)
+				local info = DropDownMenu_CreateInfo()
+				info.text = spec or "Last Used"
+				info.func = function()
+					SpecializationEquip.copyBar(menuList.fromChar, spec, fromIndex, menuList.toIndex)
+				end
+				info.icon = icon
+				info.hasArrow = true
+				info.notCheckable = true
+				info.keepShownOnClick = true
+				info.menuList = {
+					name = "COPYBAR",
+					spec = spec,
+					toIndex = menuList.toIndex,
+					fromChar = menuList.fromChar
+				}
+				DropDownMenu_AddButton(info, 4)
+			end
+			add()
+			if (db ~= nil) then
+				for spec, _ in pairs(db) do
+					add(spec, db.specIcon)
+				end
+			end
+		end,
+		[5] = function(menuList)
 			for fromIndex = 1, SpecializationEquip.MAX_BARS do
 				local info = DropDownMenu_CreateInfo()
 				info.text = "Copy bar " .. fromIndex .. " from " .. menuList.fromChar .. " to your bar " .. menuList.toIndex
-				info.func = function() SpecializationEquip.copyBar(menuList.fromChar, fromIndex, menuList.toIndex) end
+				info.func = function()
+					SpecializationEquip.copyBar(menuList.fromChar, menuList.spec, fromIndex, menuList.toIndex)
+				end
 				info.hasArrow = true
 				info.notCheckable = true
 				info.keepShownOnClick = true
 				info.menuList = {
 					name = "COPYBAR",
 					toIndex = menuList.toIndex,
+					spec = menuList.spec,
 					fromIndex = fromIndex,
 					fromChar = menuList.fromChar
 				}
 
-				DropDownMenu_AddButton(info, 4)
+				DropDownMenu_AddButton(info, 5)
 			end
 		end,
-		[5] = function(menuList)
+		[6] = function(menuList)
+			local bar = SpecializationEquipGlobalDB.bars[menuList.fromChar]
+			if (menuList.spec ~= nil) then
+				bar = SpecializationEquipGlobalDB.specBars[menuList.fromChar][menuList.spec].bar
+			end
 			for i = ((menuList.fromIndex - 1) * 12 + 1), (menuList.fromIndex * 12) do
-				local b = SpecializationEquipGlobalDB.bars[menuList.fromChar] and SpecializationEquipGlobalDB.bars[menuList.fromChar][i]
-				if (menuList.fromChar == UnitName("player")) then
+				local b = bar and bar[i]
+				--[[if (menuList.fromChar == UnitName("player")) then
 					local actionType, id, subType = GetActionInfo(i)
 					b = { id = id, type = actionType, subType = subType }
-				end
+				end]]
 
 				local iname, icon
 				if b then
@@ -260,7 +314,7 @@ local menuTable = {
 				info.notClickable = true
 				info.notCheckable = true
 
-				DropDownMenu_AddButton(info, 5)
+				DropDownMenu_AddButton(info, 6)
 			end
 		end
 	},
@@ -268,8 +322,12 @@ local menuTable = {
 		[1] = function()
 			local info = DropDownMenu_CreateInfo()
 			info.text = "Hide minimap button"
-			info.func = function(_, _, _, checked) SpecializationEquip.HideMinimap(not checked) end
-			info.checked = function() return SpecializationEquipDB.hide end
+			info.func = function(_, _, _, checked)
+				SpecializationEquip.HideMinimap(not checked)
+			end
+			info.checked = function()
+				return SpecializationEquipDB.hide
+			end
 
 			DropDownMenu_AddButton(info)
 		end
@@ -278,8 +336,12 @@ local menuTable = {
 		[1] = function()
 			local info = DropDownMenu_CreateInfo()
 			info.text = "Enable debug"
-			info.func = function(_, _, _, checked) SpecializationEquipDB.debug = checked end
-			info.checked = function() return SpecializationEquipDB.debug end
+			info.func = function(_, _, _, checked)
+				SpecializationEquipDB.debug = checked
+			end
+			info.checked = function()
+				return SpecializationEquipDB.debug
+			end
 			info.keepShownOnClick = true
 
 			DropDownMenu_AddButton(info)
@@ -291,7 +353,8 @@ local menuTable = {
 			local info = DropDownMenu_CreateInfo()
 			info.text = "Close"
 			info.notCheckable = true
-			info.func = function() end
+			info.func = function()
+			end
 
 			DropDownMenu_AddButton(info)
 		end
@@ -299,8 +362,12 @@ local menuTable = {
 }
 
 local function GetMenuTarget(menuList)
-	if type(menuList) == "string" then return menuList end
-	if type(menuList) == "table" then return menuList.name end
+	if type(menuList) == "string" then
+		return menuList
+	end
+	if type(menuList) == "table" then
+		return menuList.name
+	end
 end
 
 local function AddMenu(which, level, menuList)
@@ -323,7 +390,9 @@ end
 
 local dropdown1 = DropDownMenu_GetOrCreate(ADDON_NAME .. "_MenuFrame")
 function SpecializationEquip.ConfigDialog()
-	if InCombatLockdown() then return end
+	if InCombatLockdown() then
+		return
+	end
 
 	DropDownMenu_Initialize(dropdown1, initializeMenu, "MENU")
 	ToggleDropDownMenu(1, nil, dropdown1, "cursor", 3, -3)
