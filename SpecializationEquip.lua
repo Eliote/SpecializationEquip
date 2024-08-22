@@ -1,5 +1,19 @@
 local ADDON_NAME, SpecializationEquip = ...
 
+local GetItemInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+local GetSpellInfo = function(spellIndex, book)
+	if (C_SpellBook and C_SpellBook.GetSpellBookItemType) then
+		local _, _, spellID = C_SpellBook.GetSpellBookItemType(spellIndex, Enum.SpellBookSpellBank.Player);
+		if not spellID then return end ;
+
+		local data = C_Spell.GetSpellInfo(spellID)
+		-- name, rank, icon, castTime, minRange, maxRange, spellID, originalIcon
+		return data.name, data.rank, data.iconID, data.castTime, data.minRange, data.maxRange, data.spellID, data.originalIcon
+	else
+		return GetSpellInfo(spellIndex, book)
+	end
+end
+
 local AddonFrame = CreateFrame('Frame', ADDON_NAME)
 AddonFrame:SetScript('OnEvent', function(self, event, ...) self[event](...) end)
 AddonFrame:RegisterEvent('ADDON_LOADED')
