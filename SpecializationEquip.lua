@@ -14,6 +14,9 @@ local GetSpellInfo = function(spellIndex, book)
 	end
 end
 
+local PickupSpell = PickupSpell or C_Spell.PickupSpell
+local PickupItem = PickupItem or C_Item.PickupItem
+
 local AddonFrame = CreateFrame('Frame', ADDON_NAME)
 AddonFrame:SetScript('OnEvent', function(self, event, ...) self[event](...) end)
 AddonFrame:RegisterEvent('ADDON_LOADED')
@@ -99,7 +102,11 @@ local function PickupMountById(id)
 
 	local _, spellID = C_MountJournal.GetMountInfoByID(id)
 
-	PickupSpell(spellID)
+	if (not spellID) then
+		C_MountJournal.Pickup(0)
+	else
+		PickupSpell(spellID)
+	end
 end
 
 local function pickupAction(id, type, subType)

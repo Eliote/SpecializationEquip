@@ -213,9 +213,21 @@ local menuTable = {
 				DropDownMenu_AddButton(info, 2)
 			end
 
+			local info = DropDownMenu_CreateInfo()
+			info.text = "All bars"
+			info.hasArrow = true
+			info.notCheckable = true
+			info.keepShownOnClick = true
+			info.menuList = {
+				name = "COPYBAR",
+				toIndex = -1
+			}
+
+			DropDownMenu_AddButton(info, 2)
+
 			AddSpacer(2)
 
-			local info = DropDownMenu_CreateInfo()
+			info = DropDownMenu_CreateInfo()
 			info.text = "Log copy in chat"
 			info.func = function(_, _, _, checked)
 				SpecializationEquipDB.logCopy = checked
@@ -245,14 +257,20 @@ local menuTable = {
 		end,
 		[4] = function(menuList)
 			local db = SpecializationEquipGlobalDB.specBars[menuList.fromChar]
+			local isCopyAll = (menuList.toIndex == -1)
 			local add = function(spec, icon)
 				local info = DropDownMenu_CreateInfo()
 				info.text = spec or "Last Used"
 				info.func = function()
-					SpecializationEquip.copyBar(menuList.fromChar, spec, fromIndex, menuList.toIndex)
+					--SpecializationEquip.copyBar(menuList.fromChar, spec, fromIndex, menuList.toIndex)
+					if (isCopyAll) then
+						for fromIndex = 1, SpecializationEquip.MAX_BARS do
+							SpecializationEquip.copyBar(menuList.fromChar, spec, fromIndex, fromIndex)
+						end
+					end
 				end
 				info.icon = icon
-				info.hasArrow = true
+				info.hasArrow = not isCopyAll
 				info.notCheckable = true
 				info.keepShownOnClick = true
 				info.menuList = {
