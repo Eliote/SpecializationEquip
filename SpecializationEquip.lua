@@ -1,16 +1,14 @@
 local ADDON_NAME, SpecializationEquip = ...
 
 local GetItemInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
-local GetSpellInfo = function(spellIndex, book)
-	if (C_SpellBook and C_SpellBook.GetSpellBookItemType) then
-		local _, _, spellID = C_SpellBook.GetSpellBookItemType(spellIndex, Enum.SpellBookSpellBank.Player);
-		if not spellID then return end ;
-
-		local data = C_Spell.GetSpellInfo(spellID)
+local GetSpellInfo = function(id)
+	if (C_Spell and C_Spell.GetSpellInfo) then
+		local data = C_Spell.GetSpellInfo(id)
+		if (not data) then return end
 		-- name, rank, icon, castTime, minRange, maxRange, spellID, originalIcon
 		return data.name, data.rank, data.iconID, data.castTime, data.minRange, data.maxRange, data.spellID, data.originalIcon
 	else
-		return GetSpellInfo(spellIndex, book)
+		return GetSpellInfo(id)
 	end
 end
 
