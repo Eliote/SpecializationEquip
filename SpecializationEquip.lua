@@ -55,6 +55,76 @@ local function dprint(...)
 	end
 end
 
+local barNameMap = {
+	[1] = { name = "1" },
+	[2] = { name = "Bonus" },
+	[3] = { name = "4" },
+	[4] = { name = "5" },
+	[5] = { name = "3" },
+	[6] = { name = "2" },
+	[7] = { name = "Class 1" },
+	[8] = { name = "Class 2" },
+	[9] = { name = "Class 3" },
+	[10] = { name = "Class 4" },
+	[11] = { name = "DF" },
+	[12] = { name = "12" },
+	[13] = { name = "6" },
+	[14] = { name = "7" },
+	[15] = { name = "8" },
+}
+
+local barNameOrder = {
+	"1",
+	"2",
+	"3",
+	"4",
+	"5",
+	"6",
+	"7",
+	"8",
+	"12",
+	"Class 1",
+	"Class 2",
+	"Class 3",
+	"Class 4",
+	"Bonus",
+	"DF",
+}
+
+do
+	local t = {}
+	for i, v in ipairs(barNameOrder) do
+		t[v] = i
+	end
+	for k, v in pairs(barNameMap) do
+		v.order = t[v.name] or 999
+	end
+end
+
+function SpecializationEquip.getBarName(barNum)
+	local value = barNameMap[barNum]
+	local name = (value and value.name or barNum)
+	local order = (value and value.order or 999)
+	return "|cFF3DDC53" .. name .. "|r", order
+end
+
+function SpecializationEquip.SortedBars()
+	local bar = {}
+
+	for index = 1, SpecializationEquip.MAX_BARS do
+		local barName, order = SpecializationEquip.getBarName(index)
+		table.insert(bar, { index = index, name = barName, order = order })
+	end
+
+	table.sort(bar, function(a, b)
+		local ia = a.order or 999
+		local ib = b.order or 999
+		return ia < ib
+	end)
+
+	return bar
+end
+
 local function GetDbBarSlot(slot)
 	return barCache[slot]
 end

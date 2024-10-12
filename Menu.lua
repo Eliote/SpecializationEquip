@@ -130,9 +130,10 @@ local menuTable = {
 			AddSpacer()
 		end,
 		[2] = function()
-			for index = 1, SpecializationEquip.MAX_BARS do
+			for _, v in pairs(SpecializationEquip.SortedBars()) do
+				local index = v.index
 				local info = DropDownMenu_CreateInfo()
-				info.text = "Action Bar " .. index
+				info.text = "Action Bar " .. v.name
 				info.func = function(_, _, _, checked)
 					SpecializationEquipDB.barsToSync[index] = checked
 				end
@@ -199,9 +200,10 @@ local menuTable = {
 			AddSpacer()
 		end,
 		[2] = function()
-			for index = 1, SpecializationEquip.MAX_BARS do
+			for _, v in pairs(SpecializationEquip.SortedBars()) do
+				local index = v.index
 				local info = DropDownMenu_CreateInfo()
-				info.text = "To your bar " .. index
+				info.text = "To your bar " .. v.name
 				info.hasArrow = true
 				info.notCheckable = true
 				info.keepShownOnClick = true
@@ -289,9 +291,10 @@ local menuTable = {
 			end
 		end,
 		[5] = function(menuList)
-			for fromIndex = 1, SpecializationEquip.MAX_BARS do
+			for _, v in pairs(SpecializationEquip.SortedBars()) do
+				local fromIndex = v.index
 				local info = DropDownMenu_CreateInfo()
-				info.text = "Copy bar " .. fromIndex .. " from " .. menuList.fromChar .. " to your bar " .. menuList.toIndex
+				info.text = "Copy bar " .. v.name .. " from " .. menuList.fromChar .. " to your bar " .. SpecializationEquip.getBarName(menuList.toIndex)
 				info.func = function()
 					SpecializationEquip.copyBar(menuList.fromChar, menuList.spec, fromIndex, menuList.toIndex)
 				end
